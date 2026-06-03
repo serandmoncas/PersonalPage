@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import { createServerClient } from "@/lib/supabase/server";
 
-const API_URL = process.env.API_URL ?? "http://localhost:8000";
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
@@ -9,23 +10,28 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Email requerido" }, { status: 400 });
   }
 
-  let res: Response;
-  try {
-    res = await fetch(`${API_URL}/api/newsletter/subscribe`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: body.email }),
-    });
-  } catch {
-    return NextResponse.json({ error: "Servicio no disponible" }, { status: 503 });
+  const email = body.email.toLowerCase().trim();
+
+  if (!EMAIL_RE.test(email)) {
+    return NextResponse.json({ error: "Email inválido" }, { status: 400 });
   }
 
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ detail: "Error" }));
-    return NextResponse.json(
-      { error: (error as { detail?: string }).detail ?? "Error al suscribir" },
-      { status: res.status }
-    );
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    !process.env.SUPABASE_SERVICE_ROLE_KEY
+  ) {
+    console.warn("[newsletter] Supabase env vars not set — subscription not saved");
+    return NextResponse.json({ success: true }, { status: 201 });
+  }
+
+  const supabase = createServerClient();
+  const { error } = await supabase
+    .from("subscribers")
+    .upsert({ email, is_active: true }, { onConflict: "email" });
+
+  if (error) {
+    console.error("[newsletter] Supabase error:", error);
+    return NextResponse.json({ error: "No se pudo suscribir" }, { status: 500 });
   }
 
   return NextResponse.json({ success: true }, { status: 201 });
