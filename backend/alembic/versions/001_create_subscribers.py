@@ -6,7 +6,6 @@ Create Date: 2026-06-03
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 revision = "001"
 down_revision = None
@@ -17,7 +16,7 @@ depends_on = None
 def upgrade() -> None:
     op.create_table(
         "subscribers",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
+        sa.Column("id", sa.UUID(as_uuid=True), primary_key=True),
         sa.Column("email", sa.String(255), nullable=False, unique=True),
         sa.Column("is_active", sa.Boolean(), nullable=False, server_default="true"),
         sa.Column(
@@ -31,5 +30,5 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_index("ix_subscribers_email")
+    op.drop_index("ix_subscribers_email", table_name="subscribers")
     op.drop_table("subscribers")

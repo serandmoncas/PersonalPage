@@ -10,7 +10,10 @@ from app.database import Base  # noqa: E402
 import app.models.subscriber  # noqa: F401 — registers model with Base
 
 config = context.config
-config.set_main_option("sqlalchemy.url", os.environ["DATABASE_URL"])
+config.set_main_option(
+    "sqlalchemy.url",
+    os.environ.get("DATABASE_URL", "sqlite:///./test.db"),
+)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
