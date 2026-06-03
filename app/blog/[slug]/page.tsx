@@ -26,7 +26,7 @@ export default async function BlogPostPage({ params }: Props) {
     <article className="max-w-2xl">
       <header className="mb-8">
         <time className="text-sm text-[hsl(var(--muted-foreground))]">
-          {new Date(post.date).toLocaleDateString("es", {
+          {new Date(post.date + "T00:00:00").toLocaleDateString("es", {
             year: "numeric", month: "long", day: "numeric",
           })}
         </time>

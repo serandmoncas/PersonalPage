@@ -5,7 +5,7 @@ export function PostCard({ post }: { post: PostMeta }) {
   return (
     <article className="group border-b border-[hsl(var(--border))] py-6 last:border-0">
       <time className="text-xs text-[hsl(var(--muted-foreground))]">
-        {new Date(post.date).toLocaleDateString("es", {
+        {new Date(post.date + "T00:00:00").toLocaleDateString("es", {
           year: "numeric",
           month: "long",
           day: "numeric",
