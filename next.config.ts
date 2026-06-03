@@ -1,8 +1,7 @@
 import type { NextConfig } from "next";
 
 const config: NextConfig = {
-  pageExtensions: ["ts", "tsx", "mdx"],
-  experimental: { mdxRs: false },
+  // next-mdx-remote handles MDX rendering — no pageExtensions or mdxRs needed
 };
 
 export default config;
