@@ -6,6 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `PersonalPage` — template educativo Next.js 15 para páginas personales y portafolios.
 Rama `main`: stack básico (frontend estático + Vercel free tier, sin base de datos).
+
+**Demo en vivo:** https://personal-page-recipe.vercel.app  
+**Repo:** https://github.com/serandmoncas/PersonalPage  
+**Vercel project:** serandmoncas-6387s-projects/personal-page-recipe
+
 Ver `docs/superpowers/specs/2026-06-02-personal-page-recipe-design.md` para el diseño completo.
 
 ## Commands
