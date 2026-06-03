@@ -15,8 +15,8 @@ def test_subscribe_success(client):
 
 
 def test_subscribe_duplicate_returns_201(client):
-    client.post("/api/newsletter/subscribe", json={"email": "user@example.com"})
-    res = client.post("/api/newsletter/subscribe", json={"email": "user@example.com"})
+    client.post("/api/newsletter/subscribe", json={"email": "dup@example.com"})
+    res = client.post("/api/newsletter/subscribe", json={"email": "dup@example.com"})
     assert res.status_code == 201
 
 
