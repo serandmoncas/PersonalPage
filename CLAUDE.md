@@ -4,85 +4,96 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-`PersonalPage` — template educativo Next.js 15 para páginas personales y portafolios.
-Rama `main`: stack básico (frontend estático + Vercel free tier, sin base de datos).
+`PersonalPage` — template educativo Next.js 15 + FastAPI para páginas personales con features dinámicas.
+Rama `stack/nextjs-fastapi-railway`: añade backend FastAPI + PostgreSQL + newsletter. Ver `main` para el stack solo-frontend.
 
-**Demo en vivo:** https://personal-page-recipe.vercel.app  
-**Repo:** https://github.com/serandmoncas/PersonalPage  
-**Vercel project:** serandmoncas-6387s-projects/personal-page-recipe
-
-Ver `docs/superpowers/specs/2026-06-02-personal-page-recipe-design.md` para el diseño completo.
+**Demo rama main:** https://personal-page-recipe.vercel.app
+**Repo:** https://github.com/serandmoncas/PersonalPage
 
 ## Commands
+
+### Frontend (raíz del repo)
 
 ```bash
 npm run dev          # dev server (localhost:3000)
 npm run build        # build de producción
 npm run typecheck    # tsc --noEmit
 npm run lint         # ESLint .
-npm test             # Jest unit tests
-npm run test:watch   # Jest en modo watch
-npm run test:coverage # Jest con cobertura
+npm test             # Jest unit tests (24 tests)
 npm run test:e2e     # Playwright E2E (requiere npm run build primero)
+```
+
+### Backend (cd backend/)
+
+```bash
+source .venv/bin/activate        # activar virtualenv
+uvicorn app.main:app --reload    # dev server (localhost:8000)
+./start.sh                       # dev server con migraciones automáticas
+python -m pytest tests/ -v       # tests unitarios
+python -m pytest tests/ --cov=app # con cobertura
+alembic upgrade head             # aplicar migraciones
+alembic revision --autogenerate -m "desc"  # nueva migración
 ```
 
 ## Architecture
 
 ```
-lib/site.config.ts   ← único archivo que el usuario edita primero (nombre, bio, links, skills)
-lib/mdx.ts           ← lee archivos .mdx de content/ con gray-matter; __setupWithDirs para tests
-lib/metadata.ts      ← helper generatePageMetadata() para SEO consistente en todas las páginas
-content/blog/        ← posts del blog como archivos .mdx
-content/projects/    ← proyectos del portafolio como archivos .mdx
-app/                 ← Next.js App Router pages (Server Components por defecto)
-components/layout/   ← Header, Nav, Footer — layout global
-components/blog/     ← PostCard, TagBadge, BlogList (client), PostContent (MDX renderer)
-components/projects/ ← ProjectCard, TechBadge
-components/ui/       ← ThemeToggle
-components/ContactForm.tsx ← formulario de contacto (client component)
-__tests__/           ← Jest unit tests (espejo de lib/ y components/)
-e2e/                 ← Playwright E2E tests
-.github/workflows/   ← CI/CD: quality → build + e2e en paralelo
+# Frontend (raíz)
+lib/site.config.ts   ← configuración personal (nombre, bio, links)
+lib/mdx.ts           ← lector de archivos MDX con gray-matter
+lib/metadata.ts      ← helper SEO
+components/NewsletterForm.tsx  ← form que llama /api/newsletter
+app/api/newsletter/route.ts   ← proxy Next.js → FastAPI (server-side)
+app/api/contact/route.ts      ← Resend (sin cambios vs main)
+
+# Backend (backend/)
+app/main.py          ← FastAPI app + CORS + router registration
+app/database.py      ← SQLAlchemy 2 + get_db dependency
+app/models/          ← modelos ORM (Subscriber)
+app/schemas/         ← Pydantic v2 schemas
+app/services/        ← lógica de negocio
+app/routers/         ← endpoints FastAPI
+alembic/             ← migraciones
+tests/               ← pytest + httpx TestClient
 ```
 
 ## Key Conventions
 
-- **Server vs Client Components:** `app/` pages son Server Components. Componentes con `useState`/`useEffect`/hooks son `"use client"`. `metadata` solo se exporta desde Server Components.
-- **`getAllPosts()` y `getAllProjects()`** usan `fs` — solo llamarlas en Server Components o en `lib/mdx.ts` directamente.
-- **`site.config.ts`** es la fuente de verdad — todo el sitio lo importa.
-- **Sin base de datos en `main`** — el contenido vive en archivos locales `content/`.
-- **`RESEND_API_KEY`** es el único env var — el sitio funciona sin él (el form falla silenciosamente).
-- **Tests primero para `lib/`** — las funciones de lectura de MDX tienen cobertura completa con `__setupWithDirs`.
+- **Server vs Client Components:** igual que en `main` — `"use client"` solo donde hay hooks.
+- **Backend en SQLAlchemy 2 Column-style** — usar `Column()`, no `mapped_column()`.
+- **API_URL en servidor:** el frontend llama al backend via `app/api/newsletter/route.ts` (server-side). `API_URL` es un env var privado — NO usar `NEXT_PUBLIC_API_URL` para esta llamada.
+- **CORS en main.py:** controlar orígenes via env var `ALLOWED_ORIGINS` (comma-separated). Default: `http://localhost:3000`.
+- **Tests del backend:** usan SQLite en memoria (`sqlite://`) con `StaticPool` — no requieren PostgreSQL local.
+- **Migraciones:** usar `sa.UUID` (genérico) en migraciones, no `postgresql.UUID` — garantiza compatibilidad con SQLite en tests.
 
-## Frontmatter
+## Env Vars
 
-Blog posts (`content/blog/*.mdx`):
-```yaml
-title: string
-date: YYYY-MM-DD
-description: string
-tags: string[]
-draft?: boolean   # true = excluido del build
+### Frontend (.env.local)
+
+```
+RESEND_API_KEY=re_xxx          # formulario de contacto (opcional)
+API_URL=http://localhost:8000  # URL del backend FastAPI (requerido para newsletter)
 ```
 
-Projects (`content/projects/*.mdx`):
-```yaml
-title: string
-description: string
-tech: string[]
-url?: string
-github?: string
-featured?: boolean  # true = aparece en Home
-order?: number      # orden en la lista (menor = primero)
+### Backend (backend/.env)
+
 ```
+DATABASE_URL=postgresql://user:pass@host/db
+ALLOWED_ORIGINS=http://localhost:3000,https://tu-sitio.vercel.app
+```
+
+## Deploy
+
+- **Frontend:** Vercel (igual que `main`). Agregar `API_URL=https://tu-api.up.railway.app` en Variables de Entorno de Vercel.
+- **Backend:** Railway. Crear proyecto → New Service → GitHub repo → seleccionar rama `stack/nextjs-fastapi-railway`. Railway detecta `backend/railway.toml`. Agregar `DATABASE_URL` (Railway provee PostgreSQL) y `ALLOWED_ORIGINS`. El start command ejecuta `alembic upgrade head` antes de arrancar.
 
 ## Branch Strategy
 
 | Rama | Stack añadido |
 |------|--------------|
-| `main` | Next.js 15 + Tailwind + MDX (este branch) |
-| `stack/nextjs-fastapi-railway` | + FastAPI + PostgreSQL + Railway |
+| `main` | Next.js 15 + Tailwind + MDX (solo frontend) |
+| `stack/nextjs-fastapi-railway` | + FastAPI + PostgreSQL + Railway ← esta rama |
 | `stack/nextjs-supabase` | + Supabase BaaS |
 | `stack/astro-vercel` | Astro (reescritura completa) |
 
-Ver `docs/superpowers/plans/2026-06-02-personal-page-main-branch.md` para el plan completo de implementación y guías de cada rama.
+Ver `docs/superpowers/plans/2026-06-03-stack-nextjs-fastapi-railway.md` para el plan completo.
