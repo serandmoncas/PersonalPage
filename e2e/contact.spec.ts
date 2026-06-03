@@ -3,10 +3,11 @@ import { test, expect } from "@playwright/test";
 test.describe("Contact", () => {
   test("contact page has form fields", async ({ page }) => {
     await page.goto("/contact");
+    const main = page.locator("main");
     await expect(page.getByRole("heading", { name: "Contact" })).toBeVisible();
-    await expect(page.locator('input[name="name"]')).toBeVisible();
-    await expect(page.locator('input[name="email"]')).toBeVisible();
-    await expect(page.locator('textarea[name="message"]')).toBeVisible();
+    await expect(main.locator('input[name="name"]')).toBeVisible();
+    await expect(main.locator('input[name="email"]')).toBeVisible();
+    await expect(main.locator('textarea[name="message"]')).toBeVisible();
   });
 
   test("submit button is visible and enabled by default", async ({ page }) => {
