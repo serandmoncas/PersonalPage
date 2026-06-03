@@ -9,6 +9,10 @@ beforeAll(() => {
   fs.mkdirSync(path.join(FIXTURES_DIR, "projects"), { recursive: true });
 
   fs.writeFileSync(
+    path.join(FIXTURES_DIR, "blog", "older-post.mdx"),
+    `---\ntitle: Older Post\ndate: 2025-06-01\ndescription: An older post\ntags:\n  - general\n---\n\nOlder content.`
+  );
+  fs.writeFileSync(
     path.join(FIXTURES_DIR, "blog", "hello-world.mdx"),
     `---\ntitle: Hello World\ndate: 2026-01-15\ndescription: My first post\ntags:\n  - nextjs\n  - typescript\n---\n\n# Hello\n\nContent here.`
   );
@@ -33,9 +37,9 @@ describe("getAllPosts", () => {
       path.join(FIXTURES_DIR, "projects")
     );
     const posts = getAllPosts();
-    expect(posts).toHaveLength(1);
-    expect(posts[0].slug).toBe("hello-world");
-    expect(posts[0].title).toBe("Hello World");
+    expect(posts).toHaveLength(2);
+    expect(posts[0].slug).toBe("hello-world");   // 2026-01-15 comes first
+    expect(posts[1].slug).toBe("older-post");     // 2025-06-01 comes second
     expect(posts[0].tags).toEqual(["nextjs", "typescript"]);
   });
 
@@ -46,6 +50,7 @@ describe("getAllPosts", () => {
     );
     const posts = getAllPosts();
     expect(posts.find((p: { slug: string }) => p.slug === "draft-post")).toBeUndefined();
+    expect(posts).toHaveLength(2); // only hello-world and older-post
   });
 });
 

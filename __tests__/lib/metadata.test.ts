@@ -1,4 +1,5 @@
 import { generatePageMetadata } from "@/lib/metadata";
+import { site } from "@/lib/site.config";
 
 describe("generatePageMetadata", () => {
   it("builds metadata with title and description", () => {
@@ -14,7 +15,7 @@ describe("generatePageMetadata", () => {
     const meta = generatePageMetadata({ title: "Home", description: "Personal site" });
     const og = meta.openGraph as Record<string, unknown>;
     expect(og.title).toBe("Home | Tu Nombre");
-    expect(typeof og.url).toBe("string");
+    expect(og.url).toBe(site.url);
   });
 
   it("uses site name as fallback title when no title given", () => {
